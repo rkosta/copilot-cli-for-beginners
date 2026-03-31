@@ -101,6 +101,7 @@ Commands:
   add      - Add a new book
   remove   - Remove a book by title
   find     - Find books by author
+  mark     - Mark a book as read by title
   stats    - Show collection statistics (total, read/unread, oldest/newest)
   help     - Show this help message
 """)
@@ -164,6 +165,22 @@ def handle_stats() -> None:
         print("Newest: N/A")
 
 
+def handle_mark() -> None:
+    """Prompt for a book title and mark it as read."""
+    print("\nMark a Book as Read\n")
+
+    title = input("Enter the title of the book to mark as read: ").strip()
+    if not title:
+        print("\nBook title cannot be empty.")
+        return
+
+    success = collection.mark_as_read(title)
+    if success:
+        print(f"\nBook '{title}' marked as read.")
+    else:
+        print(f"\nBook '{title}' not found.")
+
+
 def main() -> None:
     """Main entry point for the CLI application."""
     if len(sys.argv) < 2:
@@ -180,6 +197,8 @@ def main() -> None:
         handle_remove()
     elif command == "find":
         handle_find()
+    elif command == "mark":
+        handle_mark()
     elif command == "stats":
         handle_stats()
     elif command == "help":
