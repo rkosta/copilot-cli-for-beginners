@@ -279,6 +279,17 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Command dispatcher mapping to improve maintainability
+_COMMAND_MAP = {
+    "list": lambda coll, a: handle_list(coll),
+    "add": lambda coll, a: handle_add(coll, title=getattr(a, "title", None), author=getattr(a, "author", None), year=getattr(a, "year", None)),
+    "remove": lambda coll, a: handle_remove(coll, title=getattr(a, "title", None)),
+    "find": lambda coll, a: handle_find(coll, author=getattr(a, "author", None)),
+    "mark": lambda coll, a: handle_mark(coll, title=getattr(a, "title", None)),
+    "stats": lambda coll, a: handle_stats(coll),
+}
+
+
 def main(argv: Optional[List[str]] = None, collection: Optional[BookCollection] = None) -> int:
     """Main entry point. Returns exit code (0 success, non-zero failure)."""
     if argv is None:
@@ -297,22 +308,14 @@ def main(argv: Optional[List[str]] = None, collection: Optional[BookCollection] 
         parser.print_help()
         return 0
 
-    if cmd == "list":
-        handle_list(collection)
-    elif cmd == "add":
-        handle_add(collection, title=args.title, author=args.author, year=args.year)
-    elif cmd == "remove":
-        handle_remove(collection, title=args.title)
-    elif cmd == "find":
-        handle_find(collection, author=args.author)
-    elif cmd == "mark":
-        handle_mark(collection, title=args.title)
-    elif cmd == "stats":
-        handle_stats(collection)
-    else:
+    handler = _COMMAND_MAP.get(cmd)
+    if not handler:
         logging.error("Unknown command: %s", cmd)
         parser.print_help()
         return 2
+
+    # Call the handler with (collection, args)
+    handler(collection, args)
 
     return 0
 
