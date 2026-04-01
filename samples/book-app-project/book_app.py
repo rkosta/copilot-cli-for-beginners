@@ -213,15 +213,15 @@ def handle_stats(collection: BookCollection, print_func: PrintFunc = print) -> N
     print_func(f"Read: {stats.get('read', 0)}")
     print_func(f"Unread: {stats.get('unread', 0)}")
 
-    if stats.get("oldest"):
-        b = stats["oldest"]
-        print_func(f"Oldest: {b.title} by {b.author} ({b.year})")
+    oldest = stats.get("oldest")
+    if oldest is not None:
+        print_func(f"Oldest: {oldest.title} by {oldest.author} ({oldest.year})")
     else:
         print_func("Oldest: N/A")
 
-    if stats.get("newest"):
-        b = stats["newest"]
-        print_func(f"Newest: {b.title} by {b.author} ({b.year})")
+    newest = stats.get("newest")
+    if newest is not None:
+        print_func(f"Newest: {newest.title} by {newest.author} ({newest.year})")
     else:
         print_func("Newest: N/A")
 
@@ -283,12 +283,12 @@ def build_parser() -> argparse.ArgumentParser:
 HandlerType = Callable[[BookCollection, argparse.Namespace], None]
 
 _COMMAND_MAP: Dict[str, HandlerType] = {
-    "list": lambda coll, a: handle_list(coll),
+    "list": lambda coll, _: handle_list(coll),
     "add": lambda coll, a: handle_add(coll, title=getattr(a, "title", None), author=getattr(a, "author", None), year=getattr(a, "year", None)),
     "remove": lambda coll, a: handle_remove(coll, title=getattr(a, "title", None)),
     "find": lambda coll, a: handle_find(coll, author=getattr(a, "author", None)),
     "mark": lambda coll, a: handle_mark(coll, title=getattr(a, "title", None)),
-    "stats": lambda coll, a: handle_stats(coll),
+    "stats": lambda coll, _: handle_stats(coll),
 }
 
 
