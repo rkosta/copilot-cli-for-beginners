@@ -254,13 +254,7 @@ def handle_find(
         print_func("\nAuthor name cannot be empty.")
         return
 
-    # Prefer collection.find_by_author if present, but fall back to filtering
-    try:
-        books = collection.find_by_author(author)
-    except Exception:
-        # Fallback: case-insensitive substring match on author field
-        author_lower = author.lower()
-        books = [b for b in collection.list_books() if getattr(b, "author", "").lower().find(author_lower) != -1]
+    books = collection.find_by_author(author)
 
     show_books(books, print_func=print_func)
 

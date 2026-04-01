@@ -53,7 +53,7 @@ class BookCollection:
         except json.JSONDecodeError:
             logger.warning("data.json is corrupted. Starting with empty collection.")
             self.books = []
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             logger.error(f"Invalid book data: {e}")
             self.books = []
 

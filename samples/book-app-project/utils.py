@@ -12,7 +12,7 @@ def get_user_choice() -> str:
         choice = input("Choose an option (1-5): ").strip()
         if not choice:
             print("Please enter an option.")
-        elif not choice.isdigit() or choice not in "12345":
+        elif choice not in {"1", "2", "3", "4", "5"}:
             print("Invalid option. Please enter a number between 1 and 5.")
         else:
             return choice
@@ -46,12 +46,16 @@ def get_book_details():
             break
         print("Author cannot be empty. Please try again.")
 
-    year_input = input("Enter publication year: ").strip()
-    try:
-        year = int(year_input)
-    except ValueError:
-        print("Invalid year. Defaulting to 0.")
-        year = 0
+    year_input = input("Enter publication year (optional): ").strip()
+    year = 0
+    if year_input:
+        try:
+            year = int(year_input)
+            if year != 0 and (year < 1000 or year > 2100):
+                print("Year must be between 1000 and 2100. Defaulting to 0.")
+                year = 0
+        except ValueError:
+            print("Invalid year. Defaulting to 0.")
 
     return title, author, year
 
