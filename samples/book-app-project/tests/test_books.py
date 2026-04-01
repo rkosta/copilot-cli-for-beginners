@@ -32,6 +32,7 @@ def test_mark_book_as_read():
     result = collection.mark_as_read("Dune")
     assert result is True
     book = collection.find_book_by_title("Dune")
+    assert book is not None
     assert book.read is True
 
 def test_mark_book_as_read_invalid():

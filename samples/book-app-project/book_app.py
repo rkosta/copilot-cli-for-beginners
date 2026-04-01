@@ -168,6 +168,14 @@ def handle_add(
     """
     print_func("\nAdd a New Book\n")
 
+    # Normalise CLI-supplied values before validation
+    if title is not None:
+        title = title.strip()
+    if author is not None:
+        author = author.strip()
+    if year is not None:
+        year = year.strip()
+
     # Interactive prompts only if values aren't supplied
     if title is None:
         while True:
@@ -175,6 +183,9 @@ def handle_add(
             if title:
                 break
             print_func("Title cannot be empty. Please try again.")
+    elif not title:
+        print_func("\nTitle cannot be empty.")
+        return
 
     if author is None:
         while True:
@@ -182,6 +193,9 @@ def handle_add(
             if author:
                 break
             print_func("Author cannot be empty. Please try again.")
+    elif not author:
+        print_func("\nAuthor cannot be empty.")
+        return
 
     if year is None:
         year = input_func("Year (optional): ").strip()
@@ -518,7 +532,12 @@ def main(argv: Optional[List[str]] = None, collection: Optional[BookCollection] 
         return 2
 
     # Call the handler with (collection, args)
-    handler(collection, args)
+    try:
+        handler(collection, args)
+    except Exception as exc:  # noqa: BLE001
+        logging.error("Unexpected error: %s", exc, exc_info=True)
+        print(f"An unexpected error occurred: {exc}", file=sys.stderr)
+        return 1
 
     return 0
 
