@@ -206,3 +206,24 @@ class BookCollection:
             List of books by the specified author
         """
         return [b for b in self.books if b.author.lower() == author.lower()]
+
+    def list_by_year(self, start: int, end: int) -> List[Book]:
+        """Return books published between start and end year (inclusive).
+
+        Args:
+            start: The start year of the range
+            end: The end year of the range
+
+        Returns:
+            List of books whose publication year falls within [start, end]
+
+        Raises:
+            ValueError: If start or end are not valid years, or start > end
+        """
+        if not isinstance(start, int) or start < 1000 or start > 2100:
+            raise ValueError("start must be an integer between 1000 and 2100")
+        if not isinstance(end, int) or end < 1000 or end > 2100:
+            raise ValueError("end must be an integer between 1000 and 2100")
+        if start > end:
+            raise ValueError("start year must not be greater than end year")
+        return [b for b in self.books if start <= b.year <= end]
