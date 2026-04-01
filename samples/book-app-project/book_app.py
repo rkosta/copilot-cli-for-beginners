@@ -16,6 +16,7 @@ import sys
 from typing import Callable, Dict, List, Optional, TypedDict
 
 from books import Book, BookCollection
+from utils import format_rating
 
 # Types for I/O hooks used for easier testing
 InputFunc = Callable[[str], str]
@@ -39,7 +40,9 @@ def show_books(books: List[Book], print_func: PrintFunc = print) -> None:
     print_func("\nYour Book Collection:\n")
     for index, book in enumerate(books, start=1):
         status = "✓" if getattr(book, "read", False) else " "
-        print_func(f"{index}. [{status}] {book.title} by {book.author} ({book.year})")
+        rating = getattr(book, "rating", None)
+        rating_str = f" {format_rating(rating)}" if rating else ""
+        print_func(f"{index}. [{status}] {book.title} by {book.author} ({book.year}){rating_str}")
     print_func("")
 
 
@@ -254,6 +257,100 @@ def handle_mark(
         print_func(f"\nFailed to mark '{book.title}' as read.")
 
 
+def handle_rate(
+    collection: BookCollection,
+    input_func: InputFunc = input,
+    print_func: PrintFunc = print,
+    title: Optional[str] = None,
+    rating: Optional[str] = None,
+) -> None:
+    print_func("\nRate a Book\n")
+
+    if title is None:
+        title = input_func("Enter the title of the book to rate: ").strip()
+
+    if not title:
+        print_func("\nBook title cannot be empty.")
+        return
+
+    book = _find_book_fuzzy(collection, title)
+    if not book:
+        print_func(f"\nBook '{title}' not found.")
+        return
+
+    rating_int: int
+    if rating is None:
+        while True:
+            rating_input = input_func("Enter rating (1-5): ").strip()
+            try:
+                rating_int = int(rating_input)
+                if 1 <= rating_int <= 5:
+                    break
+                print_func("Rating must be between 1 and 5. Please try again.")
+            except ValueError:
+                print_func("Invalid input. Please enter a number between 1 and 5.")
+    else:
+        try:
+            rating_int = int(rating)
+            if not (1 <= rating_int <= 5):
+                print_func("Error: Rating must be between 1 and 5.")
+                return
+        except ValueError:
+            print_func("Invalid rating format.")
+            return
+
+    review: Optional[str] = None
+    if rating is None:
+        review = input_func("Enter a review (optional, press Enter to skip): ").strip()
+        review = review if review else None
+
+    try:
+        collection.set_rating(book.title, rating_int, review)
+        rating_display = format_rating(rating_int)
+        print_func(f"\nBook '{book.title}' rated: {rating_display}")
+        if review:
+            print_func(f"Review: {review}")
+    except ValueError as e:
+        print_func(f"\nError: {e}")
+
+
+def handle_view_review(
+    collection: BookCollection,
+    input_func: InputFunc = input,
+    print_func: PrintFunc = print,
+    title: Optional[str] = None,
+) -> None:
+    print_func("\nView Book Review\n")
+
+    if title is None:
+        title = input_func("Enter the title of the book: ").strip()
+
+    if not title:
+        print_func("\nBook title cannot be empty.")
+        return
+
+    book = _find_book_fuzzy(collection, title)
+    if not book:
+        print_func(f"\nBook '{title}' not found.")
+        return
+
+    print_func(f"\n{book.title} by {book.author} ({book.year})")
+    print_func("-" * 50)
+
+    rating = getattr(book, "rating", None)
+    if rating:
+        rating_display = format_rating(rating)
+        print_func(f"Rating: {rating_display} ({rating}/5)")
+    else:
+        print_func("Rating: Not rated")
+
+    review = getattr(book, "review", None)
+    if review:
+        print_func(f"Review: {review}")
+    else:
+        print_func("Review: No review yet")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Book Collection Helper")
     sub = parser.add_subparsers(dest="command", required=False)
@@ -274,6 +371,13 @@ def build_parser() -> argparse.ArgumentParser:
     mark_p = sub.add_parser("mark", help="Mark a book as read by title")
     mark_p.add_argument("--title", help="Title (exact or substring)")
 
+    rate_p = sub.add_parser("rate", help="Rate a book (1-5 stars)")
+    rate_p.add_argument("--title", help="Book title (exact or substring)")
+    rate_p.add_argument("--rating", help="Rating (1-5)")
+
+    view_p = sub.add_parser("view-review", help="View a book's rating and review")
+    view_p.add_argument("--title", help="Book title (exact or substring)")
+
     sub.add_parser("stats", help="Show collection statistics")
 
     return parser
@@ -288,6 +392,8 @@ _COMMAND_MAP: Dict[str, HandlerType] = {
     "remove": lambda coll, a: handle_remove(coll, title=getattr(a, "title", None)),
     "find": lambda coll, a: handle_find(coll, author=getattr(a, "author", None)),
     "mark": lambda coll, a: handle_mark(coll, title=getattr(a, "title", None)),
+    "rate": lambda coll, a: handle_rate(coll, title=getattr(a, "title", None), rating=getattr(a, "rating", None)),
+    "view-review": lambda coll, a: handle_view_review(coll, title=getattr(a, "title", None)),
     "stats": lambda coll, _: handle_stats(coll),
 }
 

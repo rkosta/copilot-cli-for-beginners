@@ -16,6 +16,8 @@ class Book:
     author: str
     year: int
     read: bool = False
+    rating: Optional[int] = None
+    review: Optional[str] = None
 
     def __post_init__(self):
         """Validate book data on creation."""
@@ -25,10 +27,16 @@ class Book:
             raise ValueError("Author must be a non-empty string")
         if not isinstance(self.year, int) or self.year < 1000 or self.year > 2100:
             raise ValueError("Year must be an integer between 1000 and 2100")
+        if self.rating is not None and (not isinstance(self.rating, int) or self.rating < 1 or self.rating > 5):
+            raise ValueError("Rating must be an integer between 1 and 5")
+        if self.review is not None and not isinstance(self.review, str):
+            raise ValueError("Review must be a string")
 
         # Normalize whitespace
         self.title = self.title.strip()
         self.author = self.author.strip()
+        if self.review:
+            self.review = self.review.strip()
 
 
 class BookCollection:
@@ -123,10 +131,10 @@ class BookCollection:
 
     def remove_book(self, title: str) -> bool:
         """Remove a book by title.
-        
+
         Args:
             title: The title of the book to remove
-            
+
         Returns:
             True if book was found and removed, False otherwise
         """
@@ -136,6 +144,57 @@ class BookCollection:
             self.save_books()
             return True
         return False
+
+    def set_rating(self, title: str, rating: int, review: Optional[str] = None) -> bool:
+        """Set or update a book's rating and optional review.
+
+        Args:
+            title: The title of the book to rate
+            rating: Rating value (1-5)
+            review: Optional review text
+
+        Returns:
+            True if book was found and rated, False otherwise
+
+        Raises:
+            ValueError: If rating is invalid
+        """
+        if not isinstance(rating, int) or rating < 1 or rating > 5:
+            raise ValueError("Rating must be an integer between 1 and 5")
+        if review is not None and not isinstance(review, str):
+            raise ValueError("Review must be a string")
+
+        book = self.find_book_by_title(title)
+        if book:
+            book.rating = rating
+            book.review = review.strip() if review else None
+            self.save_books()
+            return True
+        return False
+
+    def get_rating(self, title: str) -> Optional[int]:
+        """Get a book's rating.
+
+        Args:
+            title: The title of the book
+
+        Returns:
+            The rating (1-5) or None if not rated
+        """
+        book = self.find_book_by_title(title)
+        return book.rating if book else None
+
+    def get_review(self, title: str) -> Optional[str]:
+        """Get a book's review.
+
+        Args:
+            title: The title of the book
+
+        Returns:
+            The review text or None if no review exists
+        """
+        book = self.find_book_by_title(title)
+        return book.review if book else None
 
     def find_by_author(self, author: str) -> List[Book]:
         """Find all books by a given author (case-insensitive).
