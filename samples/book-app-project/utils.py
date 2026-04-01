@@ -1,4 +1,7 @@
-def format_rating(rating) -> str:
+from typing import Optional
+
+
+def format_rating(rating: Optional[int]) -> str:
     """Format a rating (1-5) as stars or text representation.
     
     Args:
