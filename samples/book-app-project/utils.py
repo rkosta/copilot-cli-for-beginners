@@ -1,4 +1,7 @@
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def format_rating(rating: Optional[int]) -> str:
@@ -14,5 +17,6 @@ def format_rating(rating: Optional[int]) -> str:
         return ""
     if isinstance(rating, int) and 1 <= rating <= 5:
         return "⭐" * rating
+    logger.warning("format_rating received invalid value: %r", rating)
     return ""
 
