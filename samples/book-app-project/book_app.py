@@ -32,7 +32,12 @@ class Stats(TypedDict, total=False):
 
 
 def show_books(books: List[Book], print_func: PrintFunc = print) -> None:
-    """Display books in a user-friendly format using print_func."""
+    """Display books in a user-friendly format.
+
+    Args:
+        books: List of Book objects to display.
+        print_func: Callable used for output; defaults to built-in print.
+    """
     if not books:
         print_func("No books found.")
         return
@@ -47,7 +52,17 @@ def show_books(books: List[Book], print_func: PrintFunc = print) -> None:
 
 
 def parse_year(year_str: str) -> int:
-    """Parse and validate a year string. Raises ValueError on invalid input."""
+    """Parse and validate a year string.
+
+    Args:
+        year_str: String representation of a year, or empty string for unknown.
+
+    Returns:
+        Parsed integer year, or 0 if year_str is empty.
+
+    Raises:
+        ValueError: If year_str is not an integer or falls outside 0–2100.
+    """
     if not year_str:
         return 0
     try:
@@ -62,7 +77,12 @@ def parse_year(year_str: str) -> int:
 def _find_book_fuzzy(collection: BookCollection, title: str) -> Optional[Book]:
     """Find a book by title using case-insensitive exact then substring matching.
 
-    Returns the first matching Book or None.
+    Args:
+        collection: The BookCollection to search.
+        title: The title string to search for.
+
+    Returns:
+        The first matching Book, or None if not found.
     """
     if not title:
         return None
@@ -86,7 +106,12 @@ def _find_book_fuzzy(collection: BookCollection, title: str) -> Optional[Book]:
 def books_stats(books: List[Book]) -> Stats:
     """Return statistics for a list of Book objects.
 
-    Uses comprehensions and explicit handling of year parsing.
+    Args:
+        books: List of Book objects to analyse.
+
+    Returns:
+        A Stats TypedDict with total, read, unread, oldest, and newest entries.
+        Books with year 0 (unknown) are excluded from oldest/newest calculations.
     """
     total = len(books)
     read_count = sum(1 for b in books if getattr(b, "read", False))
@@ -114,6 +139,12 @@ def books_stats(books: List[Book]) -> Stats:
 
 # Handler functions accept the collection and optional I/O hooks for testability
 def handle_list(collection: BookCollection, print_func: PrintFunc = print) -> None:
+    """List all books in the collection.
+
+    Args:
+        collection: The BookCollection to list.
+        print_func: Callable used for output; defaults to built-in print.
+    """
     show_books(collection.list_books(), print_func=print_func)
 
 
@@ -125,6 +156,16 @@ def handle_add(
     author: Optional[str] = None,
     year: Optional[str] = None,
 ) -> None:
+    """Prompt the user to add a new book, or use provided values.
+
+    Args:
+        collection: The BookCollection to add to.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        title: Book title; prompts interactively if None.
+        author: Book author; prompts interactively if None.
+        year: Publication year string; prompts interactively if None.
+    """
     print_func("\nAdd a New Book\n")
 
     # Interactive prompts only if values aren't supplied
@@ -159,6 +200,14 @@ def handle_remove(
     print_func: PrintFunc = print,
     title: Optional[str] = None,
 ) -> None:
+    """Prompt the user to remove a book by title.
+
+    Args:
+        collection: The BookCollection to remove from.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        title: Book title to remove; prompts interactively if None.
+    """
     print_func("\nRemove a Book\n")
 
     if title is None:
@@ -188,6 +237,14 @@ def handle_find(
     print_func: PrintFunc = print,
     author: Optional[str] = None,
 ) -> None:
+    """Find and display books by author name (substring match).
+
+    Args:
+        collection: The BookCollection to search.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        author: Author name to search for; prompts interactively if None.
+    """
     print_func("\nFind Books by Author\n")
 
     if author is None:
@@ -209,6 +266,12 @@ def handle_find(
 
 
 def handle_stats(collection: BookCollection, print_func: PrintFunc = print) -> None:
+    """Display statistics for the book collection.
+
+    Args:
+        collection: The BookCollection to summarise.
+        print_func: Callable used for output; defaults to built-in print.
+    """
     books = collection.list_books()
     stats = books_stats(books)
 
@@ -235,6 +298,14 @@ def handle_mark(
     print_func: PrintFunc = print,
     title: Optional[str] = None,
 ) -> None:
+    """Mark a book as read by title.
+
+    Args:
+        collection: The BookCollection to update.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        title: Book title to mark; prompts interactively if None.
+    """
     print_func("\nMark a Book as Read\n")
 
     if title is None:
@@ -264,6 +335,15 @@ def handle_rate(
     title: Optional[str] = None,
     rating: Optional[str] = None,
 ) -> None:
+    """Rate a book 1–5 stars with an optional review.
+
+    Args:
+        collection: The BookCollection to update.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        title: Book title to rate; prompts interactively if None.
+        rating: Rating string (1–5); prompts interactively if None.
+    """
     print_func("\nRate a Book\n")
 
     if title is None:
@@ -320,6 +400,14 @@ def handle_view_review(
     print_func: PrintFunc = print,
     title: Optional[str] = None,
 ) -> None:
+    """Display the rating and review for a book.
+
+    Args:
+        collection: The BookCollection to query.
+        input_func: Callable for reading user input; defaults to built-in input.
+        print_func: Callable used for output; defaults to built-in print.
+        title: Book title to view; prompts interactively if None.
+    """
     print_func("\nView Book Review\n")
 
     if title is None:
@@ -352,6 +440,11 @@ def handle_view_review(
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the CLI argument parser.
+
+    Returns:
+        Configured ArgumentParser with all subcommands registered.
+    """
     parser = argparse.ArgumentParser(description="Book Collection Helper")
     sub = parser.add_subparsers(dest="command", required=False)
 
@@ -399,7 +492,15 @@ _COMMAND_MAP: Dict[str, HandlerType] = {
 
 
 def main(argv: Optional[List[str]] = None, collection: Optional[BookCollection] = None) -> int:
-    """Main entry point. Returns exit code (0 success, non-zero failure)."""
+    """Main entry point for the Book Collection CLI.
+
+    Args:
+        argv: Argument list; defaults to sys.argv[1:] if None.
+        collection: BookCollection instance; creates a default one if None.
+
+    Returns:
+        Exit code: 0 on success, non-zero on failure.
+    """
     if argv is None:
         argv = sys.argv[1:]
 

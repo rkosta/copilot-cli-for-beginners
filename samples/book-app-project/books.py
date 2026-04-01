@@ -5,8 +5,6 @@ from typing import List, Optional
 
 DATA_FILE = "data.json"
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -25,8 +23,8 @@ class Book:
             raise ValueError("Title must be a non-empty string")
         if not isinstance(self.author, str) or not self.author.strip():
             raise ValueError("Author must be a non-empty string")
-        if not isinstance(self.year, int) or self.year < 1000 or self.year > 2100:
-            raise ValueError("Year must be an integer between 1000 and 2100")
+        if not isinstance(self.year, int) or (self.year != 0 and (self.year < 1000 or self.year > 2100)):
+            raise ValueError("Year must be 0 (unknown) or an integer between 1000 and 2100")
         if self.rating is not None and (not isinstance(self.rating, int) or self.rating < 1 or self.rating > 5):
             raise ValueError("Rating must be an integer between 1 and 5")
         if self.review is not None and not isinstance(self.review, str):
@@ -205,7 +203,7 @@ class BookCollection:
         Returns:
             List of books by the specified author
         """
-        return [b for b in self.books if b.author.lower() == author.lower()]
+        return [b for b in self.books if author.lower() in b.author.lower()]
 
     def list_by_year(self, start: int, end: int) -> List[Book]:
         """Return books published between start and end year (inclusive).
