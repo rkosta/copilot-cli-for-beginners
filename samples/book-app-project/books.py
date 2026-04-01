@@ -17,7 +17,7 @@ class Book:
     rating: Optional[int] = None
     review: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate book data on creation."""
         if not isinstance(self.title, str) or not self.title.strip():
             raise ValueError("Title must be a non-empty string")
@@ -38,26 +38,32 @@ class Book:
 
 
 class BookCollection:
-    def __init__(self):
+    def __init__(self) -> None:
         self.books: List[Book] = []
         self.load_books()
 
-    def load_books(self):
+    def load_books(self) -> None:
         """Load books from the JSON file if it exists."""
         try:
             with open(DATA_FILE, "r") as f:
                 data = json.load(f)
-                self.books = [Book(**b) for b in data]
         except FileNotFoundError:
             self.books = []
+            return
         except json.JSONDecodeError:
             logger.warning("data.json is corrupted. Starting with empty collection.")
             self.books = []
-        except (ValueError, TypeError) as e:
-            logger.error(f"Invalid book data: {e}")
-            self.books = []
+            return
 
-    def save_books(self):
+        loaded = []
+        for record in data:
+            try:
+                loaded.append(Book(**record))
+            except (KeyError, ValueError, TypeError) as e:
+                logger.warning("Skipping invalid book record %r: %s", record, e)
+        self.books = loaded
+
+    def save_books(self) -> None:
         """Save the current book collection to JSON.
         
         Raises:
@@ -67,7 +73,7 @@ class BookCollection:
             with open(DATA_FILE, "w") as f:
                 json.dump([asdict(b) for b in self.books], f, indent=2)
         except (IOError, OSError) as e:
-            logger.error(f"Failed to save books: {e}")
+            logger.error("Failed to save books: %s", e)
             raise
 
     def add_book(self, title: str, author: str, year: int) -> Book:

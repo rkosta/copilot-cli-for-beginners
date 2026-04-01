@@ -16,11 +16,10 @@ import sys
 from typing import Callable, Dict, List, Optional, TypedDict
 
 from books import Book, BookCollection
-from utils import format_rating
+from utils import format_rating, show_books, PrintFunc
 
 # Types for I/O hooks used for easier testing
 InputFunc = Callable[[str], str]
-PrintFunc = Callable[[str], None]
 
 
 class Stats(TypedDict, total=False):
@@ -29,26 +28,6 @@ class Stats(TypedDict, total=False):
     unread: int
     oldest: Optional[Book]
     newest: Optional[Book]
-
-
-def show_books(books: List[Book], print_func: PrintFunc = print) -> None:
-    """Display books in a user-friendly format.
-
-    Args:
-        books: List of Book objects to display.
-        print_func: Callable used for output; defaults to built-in print.
-    """
-    if not books:
-        print_func("No books found.")
-        return
-
-    print_func("\nYour Book Collection:\n")
-    for index, book in enumerate(books, start=1):
-        status = "✓" if getattr(book, "read", False) else " "
-        rating = getattr(book, "rating", None)
-        rating_str = f" {format_rating(rating)}" if rating else ""
-        print_func(f"{index}. [{status}] {book.title} by {book.author} ({book.year}){rating_str}")
-    print_func("")
 
 
 def parse_year(year_str: str) -> int:
