@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
 import books
 from books import Book, BookCollection
-from book_app import handle_year_range, main
+from book_app import handle_year_range, handle_list_unread, main
 
 
 # ---------------------------------------------------------------------------
@@ -675,3 +675,187 @@ class TestConcurrentAccess:
         assert errors == [], f"Concurrent adds raised: {errors}"
         actual_titles = {b.title for b in collection.books}
         assert actual_titles == set(titles)
+
+
+# ---------------------------------------------------------------------------
+# Listing unread books
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mixed_collection(collection):
+    """A BookCollection with both read and unread books."""
+    collection.add_book("Unread One", "Author A", 2001)
+    collection.add_book("Read One", "Author B", 2002)
+    collection.add_book("Unread Two", "Author C", 2003)
+    collection.add_book("Read Two", "Author D", 2004)
+    collection.mark_as_read("Read One")
+    collection.mark_as_read("Read Two")
+    return collection
+
+
+@pytest.fixture
+def all_read_collection(collection):
+    """A BookCollection where every book is marked as read."""
+    collection.add_book("Book A", "Author A", 2001)
+    collection.add_book("Book B", "Author B", 2002)
+    collection.mark_as_read("Book A")
+    collection.mark_as_read("Book B")
+    return collection
+
+
+@pytest.fixture
+def all_unread_collection(collection):
+    """A BookCollection where no book is marked as read."""
+    collection.add_book("Book A", "Author A", 2001)
+    collection.add_book("Book B", "Author B", 2002)
+    return collection
+
+
+class TestListUnread:
+    """Tests for BookCollection.list_unread."""
+
+    # --- Happy path ---
+
+    def test_list_unread_returns_only_unread_books(self, mixed_collection):
+        """Only books where read is False are returned."""
+        result = mixed_collection.list_unread()
+        assert all(not book.read for book in result)
+
+    def test_list_unread_excludes_read_books(self, mixed_collection):
+        """Books that have been marked as read do not appear in results."""
+        result = mixed_collection.list_unread()
+        titles = [b.title for b in result]
+        assert "Read One" not in titles
+        assert "Read Two" not in titles
+
+    def test_list_unread_includes_all_unread_books(self, mixed_collection):
+        """All unread books are present in the result."""
+        result = mixed_collection.list_unread()
+        titles = [b.title for b in result]
+        assert "Unread One" in titles
+        assert "Unread Two" in titles
+
+    def test_list_unread_count_matches_expected(self, mixed_collection):
+        """Returned count equals the number of unread books in the collection."""
+        expected = sum(1 for b in mixed_collection.books if not b.read)
+        assert len(mixed_collection.list_unread()) == expected
+
+    def test_list_unread_returns_list_type(self, mixed_collection):
+        """Return type is always a list."""
+        assert isinstance(mixed_collection.list_unread(), list)
+
+    def test_list_unread_items_are_book_objects(self, mixed_collection):
+        """Every item in the result is a Book instance."""
+        result = mixed_collection.list_unread()
+        assert all(isinstance(b, Book) for b in result)
+
+    # --- Edge cases ---
+
+    def test_list_unread_empty_collection_returns_empty_list(self, collection):
+        """Empty list returned when collection has no books."""
+        assert collection.list_unread() == []
+
+    def test_list_unread_all_read_returns_empty_list(self, all_read_collection):
+        """Empty list returned when every book is read."""
+        assert all_read_collection.list_unread() == []
+
+    def test_list_unread_all_unread_returns_full_collection(self, all_unread_collection):
+        """All books returned when none have been marked as read."""
+        result = all_unread_collection.list_unread()
+        assert len(result) == len(all_unread_collection.books)
+
+    def test_list_unread_single_unread_book_returns_it(self, collection):
+        """A collection with one unread book returns exactly that book."""
+        collection.add_book("Dune", "Frank Herbert", 1965)
+        result = collection.list_unread()
+        assert len(result) == 1
+        assert result[0].title == "Dune"
+
+    def test_list_unread_single_read_book_returns_empty(self, collection):
+        """Empty list returned when the only book in the collection is read."""
+        collection.add_book("Dune", "Frank Herbert", 1965)
+        collection.mark_as_read("Dune")
+        assert collection.list_unread() == []
+
+    # --- Result correctness ---
+
+    def test_list_unread_does_not_mutate_collection(self, mixed_collection):
+        """Calling list_unread() does not change the collection."""
+        before = len(mixed_collection.books)
+        mixed_collection.list_unread()
+        assert len(mixed_collection.books) == before
+
+    def test_list_unread_preserves_book_fields(self, collection):
+        """Returned Book objects retain all original field values."""
+        collection.add_book("Dune", "Frank Herbert", 1965)
+        result = collection.list_unread()
+        book = result[0]
+        assert book.title == "Dune"
+        assert book.author == "Frank Herbert"
+        assert book.year == 1965
+        assert book.read is False
+        assert book.rating is None
+        assert book.review is None
+
+    def test_list_unread_reflects_newly_marked_book(self, mixed_collection):
+        """A book just marked as read is no longer returned by list_unread."""
+        before = len(mixed_collection.list_unread())
+        mixed_collection.mark_as_read("Unread One")
+        after = len(mixed_collection.list_unread())
+        assert after == before - 1
+
+    def test_list_unread_preserves_order(self, collection):
+        """Unread books are returned in the same order as they appear in the collection."""
+        collection.add_book("Alpha", "Author", 2001)
+        collection.add_book("Beta", "Author", 2002)
+        collection.add_book("Gamma", "Author", 2003)
+        result = collection.list_unread()
+        assert [b.title for b in result] == ["Alpha", "Beta", "Gamma"]
+
+
+# ---------------------------------------------------------------------------
+# handle_list_unread CLI handler
+# ---------------------------------------------------------------------------
+
+class TestHandleListUnread:
+    """Tests for the handle_list_unread CLI handler."""
+
+    @pytest.fixture
+    def capture(self):
+        """Collect print output into a list of lines."""
+        lines: list[str] = []
+        return lines, lines.append
+
+    def test_handle_list_unread_shows_unread_books(self, mixed_collection, capture):
+        """Unread book titles appear in output."""
+        lines, print_func = capture
+        handle_list_unread(mixed_collection, print_func=print_func)
+        output = "\n".join(lines)
+        assert "Unread One" in output
+        assert "Unread Two" in output
+
+    def test_handle_list_unread_excludes_read_books(self, mixed_collection, capture):
+        """Read book titles do not appear in output."""
+        lines, print_func = capture
+        handle_list_unread(mixed_collection, print_func=print_func)
+        output = "\n".join(lines)
+        assert "Read One" not in output
+        assert "Read Two" not in output
+
+    def test_handle_list_unread_empty_collection_prints_no_books(self, collection, capture):
+        """'No books found' is printed when collection is empty."""
+        lines, print_func = capture
+        handle_list_unread(collection, print_func=print_func)
+        assert any("No books found" in line for line in lines)
+
+    def test_handle_list_unread_all_read_prints_no_books(self, all_read_collection, capture):
+        """'No books found' is printed when all books are read."""
+        lines, print_func = capture
+        handle_list_unread(all_read_collection, print_func=print_func)
+        assert any("No books found" in line for line in lines)
+
+    def test_handle_list_unread_via_cli_subcommand(self, mixed_collection):
+        """list-unread subcommand exits with code 0."""
+        result = main(["list-unread"], collection=mixed_collection)
+        assert result == 0
+

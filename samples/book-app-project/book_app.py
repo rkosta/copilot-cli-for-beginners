@@ -127,6 +127,16 @@ def handle_list(collection: BookCollection, print_func: PrintFunc = print) -> No
     show_books(collection.list_books(), print_func=print_func)
 
 
+def handle_list_unread(collection: BookCollection, print_func: PrintFunc = print) -> None:
+    """List only unread books in the collection.
+
+    Args:
+        collection: The BookCollection to filter.
+        print_func: Callable used for output; defaults to built-in print.
+    """
+    show_books(collection.list_unread(), print_func=print_func)
+
+
 def handle_add(
     collection: BookCollection,
     input_func: InputFunc = input,
@@ -473,6 +483,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=False)
 
     sub.add_parser("list", help="Show all books")
+    sub.add_parser("list-unread", help="Show only unread books")
 
     add_p = sub.add_parser("add", help="Add a new book")
     add_p.add_argument("--title", help="Book title")
@@ -509,6 +520,7 @@ HandlerType = Callable[[BookCollection, argparse.Namespace], None]
 
 _COMMAND_MAP: Dict[str, HandlerType] = {
     "list": lambda coll, _: handle_list(coll),
+    "list-unread": lambda coll, _: handle_list_unread(coll),
     "add": lambda coll, a: handle_add(coll, title=getattr(a, "title", None), author=getattr(a, "author", None), year=getattr(a, "year", None)),
     "remove": lambda coll, a: handle_remove(coll, title=getattr(a, "title", None)),
     "find": lambda coll, a: handle_find(coll, author=getattr(a, "author", None)),

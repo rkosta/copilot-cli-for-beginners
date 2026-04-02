@@ -131,6 +131,14 @@ class BookCollection:
         """
         return self.books
 
+    def list_unread(self) -> List[Book]:
+        """Return all books that have not been marked as read.
+
+        Returns:
+            List of Book objects where read is False; empty list if none found.
+        """
+        return [book for book in self.books if not book.read]
+
     def find_book_by_title(self, title: str) -> Optional[Book]:
         """Find a book by title (case-insensitive).
         
