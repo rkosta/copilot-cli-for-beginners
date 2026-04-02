@@ -59,8 +59,8 @@ class BookCollection:
         for record in data:
             try:
                 loaded.append(Book(**record))
-            except (KeyError, ValueError, TypeError) as e:
-                logger.warning("Skipping invalid book record %r: %s", record, e)
+            except (KeyError, ValueError, TypeError) as exc:
+                logger.warning("Skipping invalid book record %r: %s", record, exc)
         self.books = loaded
 
     def save_books(self) -> None:
@@ -72,8 +72,8 @@ class BookCollection:
         try:
             with open(DATA_FILE, "w") as f:
                 json.dump([asdict(b) for b in self.books], f, indent=2)
-        except (IOError, OSError) as e:
-            logger.error("Failed to save books: %s", e)
+        except (IOError, OSError) as exc:
+            logger.error("Failed to save books: %s", exc)
             raise
 
     def add_book(self, title: str, author: str, year: int) -> Book:
